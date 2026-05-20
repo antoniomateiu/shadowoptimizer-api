@@ -1,17 +1,22 @@
 const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
 
-// PUNE URL-UL TĂU REAL DIRECT ÎNTRE GHILIMELE (Trebuie să înceapă cu https://)
-const supabaseUrl = "https://proiectul-tau-id.supabase.co"; 
+// URL-ul tău din Supabase
+const supabaseUrl = "https://proiectul-tau-id.supabase.co"; // Păstrează URL-ul tău real aici!
 
-// Aici lași textul Base64 pe care l-ai generat deja (GitHub nu se prinde)
-const cheieInBase64 = "TEXTUL_TAU_BASE64_DE_DEASUPRA";
+// Textul tău Base64 pentru cheia Supabase
+const cheieInBase64 = "TEXTUL_TAU_BASE64_DE_DEASUPRA"; // Păstrează textul tău Base64 aici!
 
 const supabaseKey = Buffer.from(cheieInBase64, 'base64').toString('utf-8');
 const openaiKey = "mock_key";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Definim corect variabila openai ca să nu mai arunce eroarea "is not defined"
+let openai = null;
+if (openaiKey && openaiKey !== 'mock_key') {
+  openai = new OpenAI({ apiKey: openaiKey });
+}
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
