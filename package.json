@@ -1,10 +1,16 @@
 {
   "name": "shadowoptimizer-api",
   "version": "1.0.0",
+  "description": "",
+  "main": "api/optimize.js",
   "scripts": {
-    "start": "node api/optimize.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "openai": "^4.28.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
