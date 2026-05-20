@@ -13,7 +13,7 @@ if (openaiKey && openaiKey !== 'mock_key') {
 }
 
 module.exports = async function handler(req, res) {
-  // Setăm capetele CORS pentru a permite testele locale
+  // Configurare CORS explicită pentru teste locale
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -36,35 +36,26 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // Text implicit dacă nu avem încă cheia de OpenAI pusă în Vercel
-    let aiVariant = "Varianta AI: Descoperă acum noul model! Material premium, confort garantat și un stil care te scoate în evidență. Comandă cu încredere!";
+    let aiVariant = "Varianta AI Implicită: Descoperă confortul suprem cu noul nostru produs premium!";
 
     if (openai) {
       try {
         const completion = await openai.chat.completions.create({
           model: 'gpt-3.5-turbo',
           messages: [
-            {
-              role: 'system',
-              content: 'Tu esti un copywriter expert. Genereaza o descriere de produs mai persuasiva, scurta, sub 100 de cuvinte.'
-            },
-            {
-              role: 'user',
-              content: `Descrierea originala: "${originalText}"`
-            }
+            { role: 'system', content: 'Tu esti un copywriter expert. Genereaza o descriere persuasiva, scurta.' },
+            { role: 'user', content: `Descrierea originala: "${originalText}"` }
           ],
           max_tokens: 150
         });
         aiVariant = completion.choices[0].message.content;
       } catch (aiError) {
-        console.warn('OpenAI error, folosim textul implicit:', aiError.message);
+        console.warn('OpenAI error fallback:', aiError.message);
       }
     }
 
-    // Alegem aleatoriu Varianta A sau B
     const variant = Math.random() < 0.5 ? 'A' : 'B';
 
-    // Salvăm direct în tabelul 'experimente' din Supabase
     const { error: dbError } = await supabase.from('experimente').insert({
       id_client: clientId,
       text_original: originalText,
@@ -79,7 +70,6 @@ module.exports = async function handler(req, res) {
       console.error('Supabase Error:', dbError.message);
     }
 
-    // Trimitem răspunsul către formularul de test
     res.status(200).json({
       success: true,
       variantShown: variant,
