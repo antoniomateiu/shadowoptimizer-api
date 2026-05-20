@@ -64,8 +64,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    const variant = Math.random() < 0.5 ? 'A' : 'B';
-
+    // Trimitem datele în tabelul rezultate_ab
     const { error: dbError } = await supabase.from('rezultate_ab').insert({
       id_client: clientId,
       text_original: originalText,
@@ -76,10 +75,17 @@ module.exports = async function handler(req, res) {
       conversii_b: 0
     });
 
+    // DACĂ EXISTĂ EROARE LA BAZA DE DATE, O TRIMITEM PE ECRAN
     if (dbError) {
       console.error('Supabase Error:', dbError.message);
+      res.status(200).json({
+        success: false,
+        error: `Supabase respinge salvarea: ${dbError.message}. Verifica daca ai coloanele denumite exact asa în tabel.`
+      });
+      return;
     }
 
+    // Dacă totul e ok, trimitem succesul normal
     res.status(200).json({
       success: true,
       variantShown: variant,
