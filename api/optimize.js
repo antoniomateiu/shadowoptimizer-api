@@ -6,7 +6,7 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const openaiKey = process.env.OPENAI_API_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const openai = new OpenAI({ apiKey: openaiKey });
+const openai = new OpenAI({ apiKey: openaiKey || 'mock_key' }); // fallback ca să nu crape complet dacă lipsește cheia
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Preflight
+  // Preflight pentru cererile din browser (CORS)
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -33,32 +33,48 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Genereaza varianta AI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'Tu esti un copywriter expert. Genereaza o descriere de produs mai persuasiva, scurta (max 100 cuvinte), care sa creasca conversii.'
-        },
-        {
-          role: 'user',
-          content: `Descrierea originala: "${originalText}"\n\nGenereaza o varianta mai persuasiva.`
-        }
-      ],
-      max_tokens: 150
-    });
+    let aiVariant = "Varianta AI Alternativă: Descoperă confortul suprem cu noul nostru produs premium, creat special pentru tine!";
 
-    const aiVariant = completion.choices[0].message.content;
+    // Generăm textul cu OpenAI doar dacă avem o cheie validă salvată
+    if (openaiKey) {
+      try {
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'Tu esti un copywriter expert. Genereaza o descriere de produs mai persuasiva, scurta (max 100 cuvinte), care sa creasca conversii.'
+            },
+            {
+              role: 'user',
+              content: `Descrierea originala: "${originalText}"\n\nGenereaza o varianta mai persuasiva.`
+            }
+          ],
+          max_tokens: 150
+        });
+        aiVariant = completion.choices[0].message.content;
+      } catch (aiError) {
+        console.warn('OpenAI error, folosim textul fallback:', aiError.message);
+      }
+    }
+
+    // Alegem aleatoriu Varianta A sau B
     const variant = Math.random() < 0.5 ? 'A' : 'B';
 
-    // Salveaza in DB
-    await supabase.from('vizite').insert({
-      client_id: clientId,
-      product_id: productId,
-      varianta_afisata: variant,
-      tip_eveniment: 'view'
+    // Salvează în DB în tabelul corect 'experimente'
+    const { error: dbError } = await supabase.from('experimente').insert({
+      id_client: clientId, // ID-ul din test.html
+      text_original: originalText,
+      text_ai: aiVariant,
+      afisari_a: variant === 'A' ? 1 : 0,
+      afisari_b: variant === 'B' ? 1 : 0,
+      conversii_a: 0,
+      conversii_b: 0
     });
+
+    if (dbError) {
+      console.error('Supabase Error:', dbError);
+    }
 
     res.status(200).json({
       success: true,
