@@ -1,14 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const openaiKey = process.env.OPENAI_API_KEY;
+const supabaseUrl = "sb_publishable_bO_P5h_XyqRk3N1zEnVV9w_RcWWy0Iy";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzY3lzZWRjd2Vud2treGJ0d2pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDA1NjUsImV4cCI6MjA5NDMxNjU2NX0.gremnHaGQzuD-TeWHLXbbhEVjXeaG817l0geMy1uMU4";
+const openaiKey = "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";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 let openai = null;
-if (openaiKey && openaiKey !== 'mock_key') {
+if (openaiKey && openaiKey !== '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') {
   openai = new OpenAI({ apiKey: openaiKey });
 }
 
