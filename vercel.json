@@ -1,7 +1,15 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/optimize.js", "use": "@vercel/node" },
-    { "src": "api/track-event.js", "use": "@vercel/node" }
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/$1"
+    }
   ]
 }
