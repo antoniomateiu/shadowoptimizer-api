@@ -1,20 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
+const { createClient } = require('@supabase/supabase-js');
+const { OpenAI } = require('openai');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const openaiKey = process.env.OPENAI_API_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const openai = new OpenAI({ apiKey: openaiKey || 'mock_key' });
 
-export default async function handler(req, res) {
-  // 1. Setăm capetele CORS pentru a permite accesul de pe calculatorul tău local
+// Inițializăm OpenAI doar dacă există o cheie validă, altfel punem un obiect simplu ca să nu crăpăm la pornire
+let openai = null;
+if (openaiKey && openaiKey !== 'mock_key') {
+  openai = new OpenAI({ apiKey: openaiKey });
+}
+
+module.exports = async function handler(req, res) {
+  // Setăm headerele CORS pentru a permite testele de pe calculatorul tău
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // 2. Răspundem instant la verificarea automată a browserului (Preflight)
+  // Răspundem instant la verificarea automată a browserului (Preflight)
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -33,10 +38,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Varianta de rezervă în caz că nu avem încă API Key de la OpenAI configurat
+    // Text implicit în caz că OpenAI nu este configurat sau dă eroare
     let aiVariant = "Varianta AI Alternativă: Descoperă confortul suprem cu noul nostru produs premium!";
 
-    if (openaiKey && openaiKey !== 'mock_key') {
+    // Generăm textul cu AI doar dacă avem cheia configurată în Vercel
+    if (openai) {
       try {
         const completion = await openai.chat.completions.create({
           model: 'gpt-3.5-turbo',
@@ -54,14 +60,14 @@ export default async function handler(req, res) {
         });
         aiVariant = completion.choices[0].message.content;
       } catch (aiError) {
-        console.warn('OpenAI simulare fallback:', aiError.message);
+        console.warn('OpenAI error, folosim textul fallback:', aiError.message);
       }
     }
 
-    // Alegem aleatoriu A (original) sau B (AI)
+    // Alegem aleatoriu Varianta A sau B
     const variant = Math.random() < 0.5 ? 'A' : 'B';
 
-    // Salvăm direct în tabelul din Supabase
+    // Salvăm în baza de date în tabelul experimente
     const { error: dbError } = await supabase.from('experimente').insert({
       id_client: clientId,
       text_original: originalText,
@@ -73,10 +79,10 @@ export default async function handler(req, res) {
     });
 
     if (dbError) {
-      console.error('Eroare Baza de date Supabase:', dbError.message);
+      console.error('Supabase Error:', dbError.message);
     }
 
-    // Răspundem înapoi către test.html
+    // Trimitem răspunsul înapoi
     res.status(200).json({
       success: true,
       variantShown: variant,
@@ -85,7 +91,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Eroare Server:', error);
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
-}
+};
