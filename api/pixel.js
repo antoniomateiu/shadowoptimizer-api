@@ -1,6 +1,7 @@
 (function() {
   const clientId = window.SHADOW_OPTIMIZER_CLIENT_ID;
-  const apiUrl = window.SHADOW_OPTIMIZER_API_URL || 'https://shadowoptimizer-api.vercel.app';
+  // Folosim direct domeniul curent pe care este urcat scriptul, ca să nu mai avem probleme cu link-urile hardcodate
+  const apiUrl = window.SHADOW_OPTIMIZER_API_URL || 'https://shadowoptimizer-api-git-main-mateiu-antonio-s-projects.vercel.app';
 
   if (!clientId) {
     console.warn('ShadowOptimizer: clientId not set');
@@ -32,6 +33,9 @@
         });
         
         const data = await response.json();
+        
+        // Salvăm varianta direct pe element ca să o putem citi la click!
+        element.setAttribute('data-variant', data.variantShown);
         
         if (data.variantShown === 'B') {
           descElement.innerText = data.variantB;
@@ -66,6 +70,8 @@
     const productElement = e.target.closest('[data-product-id]');
     if (productElement) {
       const productId = productElement.getAttribute('data-product-id');
+      const variant = productElement.getAttribute('data-variant') || 'A'; // default la A dacă nu s-a încărcat încă serverul
+      
       fetch(`${apiUrl}/api/track-event`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +79,7 @@
           clientId,
           productId,
           eventType: 'click',
-          variant: productElement.getAttribute('data-variant')
+          variant: variant
         })
       }).catch(err => console.error('Track error:', err));
     }
