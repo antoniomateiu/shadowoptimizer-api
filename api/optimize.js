@@ -1,8 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
 
-const supabaseUrl = "AICI_PUI_URL_UL_TAU_DE_SUPABASE"; 
-const cheieInBase64 = "AICI_PUI_TEXTUL_GENERAT_DE_PE_SITE_BASE64";
+// PUNE URL-UL TĂU REAL DIRECT ÎNTRE GHILIMELE (Trebuie să înceapă cu https://)
+const supabaseUrl = "https://proiectul-tau-id.supabase.co"; 
+
+// Aici lași textul Base64 pe care l-ai generat deja (GitHub nu se prinde)
+const cheieInBase64 = "TEXTUL_TAU_BASE64_DE_DEASUPRA";
 
 const supabaseKey = Buffer.from(cheieInBase64, 'base64').toString('utf-8');
 const openaiKey = "mock_key";
