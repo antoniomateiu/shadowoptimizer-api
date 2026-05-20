@@ -9,7 +9,11 @@ const openaiKey = process.env.OPENAI_API_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const openai = new OpenAI({ apiKey: openaiKey });
 
-const corsHandler = cors({ origin: '*' });
+const corsHandler = cors({ 
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+});
 
 module.exports = (req, res) => {
   corsHandler(req, res, async () => {
