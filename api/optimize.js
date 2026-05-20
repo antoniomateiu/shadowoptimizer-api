@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
 
     const variant = Math.random() < 0.5 ? 'A' : 'B';
 
-    const { error: dbError } = await supabase.from('experimente').insert({
+    const { error: dbError } = await supabase.from('rezultate_ab').insert({
       id_client: clientId,
       text_original: originalText,
       text_ai: aiVariant,
