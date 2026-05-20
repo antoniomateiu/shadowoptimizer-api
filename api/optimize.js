@@ -1,73 +1,49 @@
 const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
 
-// URL-ul tău din Supabase
-const supabaseUrl = "https://proiectul-tau-id.supabase.co"; // Păstrează URL-ul tău real aici!
-
-// Textul tău Base64 pentru cheia Supabase
-const cheieInBase64 = "TEXTUL_TAU_BASE64_DE_DEASUPRA"; // Păstrează textul tău Base64 aici!
+// CONFIGURĂRI CONECTARE (Înlocuiește cu datele tale reale)
+const supabaseUrl = "https://proiectul-tau-id.supabase.co"; // URL-ul tău real
+const cheieInBase64 = "TEXTUL_TAU_BASE64_DE_DEASUPRA"; // Cheia ta Base64 reală
 
 const supabaseKey = Buffer.from(cheieInBase64, 'base64').toString('utf-8');
 const openaiKey = "mock_key";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Definim corect variabila openai ca să nu mai arunce eroarea "is not defined"
 let openai = null;
 if (openaiKey && openaiKey !== 'mock_key') {
   openai = new OpenAI({ apiKey: openaiKey });
 }
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+module.exports = async (req, res) => {
+  // Permitem conexiunile de tip CORS ca să poată trimite date din test.html
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  // Dacă e o cerere de verificare de la browser (Preflight), răspundem cu OK
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
+  // Acceptăm doar cereri de tip POST (trimitere de date)
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { clientId, productId, originalText } = req.body;
+    const { clientId, originalText } = req.body;
 
-    if (!clientId || !productId || !originalText) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-
-    let aiVariant = "Varianta AI Implicită: Descoperă confortul suprem cu noul nostru produs premium! Stil modern și materiale de calitate superioară.";
-
-    if (openai) {
-      try {
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'Tu esti un copywriter expert. Genereaza o descriere de produs mai persuasiva, scurta, sub 100 de cuvinte.' 
-            },
-            { 
-              role: 'user', 
-              content: `Descrierea originala: "${originalText}"` 
-            }
-          ],
-          max_tokens: 150
-        });
-        aiVariant = completion.choices[0].message.content;
-      } catch (aiError) {
-        console.warn('OpenAI error fallback:', aiError.message);
-      }
-    }
-// Ne asigurăm că variabila variant este definită clar (Alege aleatoriu între A și B)
+    // Alegem aleatoriu Varianta A sau Varianta B
     const variant = Math.random() < 0.5 ? 'A' : 'B';
     const aiVariant = "Varianta AI Implicită: Descoperă confortul suprem cu noul nostru produs premium! Stil modern și materiale de calitate superioară.";
 
-    // Trimitem datele în tabelul rezultate_ab
+    // Trimitem datele în tabelul tau rezultate_ab din Supabase
     const { error: dbError } = await supabase.from('rezultate_ab').insert({
       id_client: clientId,
       text_original: originalText,
@@ -78,7 +54,7 @@ module.exports = async function handler(req, res) {
       conversii_b: 0
     });
 
-    // Dacă există o eroare de structură în Supabase, o prindem aici
+    // Dacă Supabase dă o eroare de structură, o trimitem în ecran ca să o vedem
     if (dbError) {
       console.error('Supabase Error:', dbError.message);
       return res.status(200).json({
@@ -87,7 +63,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Dacă totul e ok, trimitem succesul normal
+    // Răspunsul final în caz de succes total
     return res.status(200).json({
       success: true,
       variantShown: variant,
@@ -95,26 +71,8 @@ module.exports = async function handler(req, res) {
       variantB: aiVariant
     });
 
-    // DACĂ EXISTĂ EROARE LA BAZA DE DATE, O TRIMITEM PE ECRAN
-    if (dbError) {
-      console.error('Supabase Error:', dbError.message);
-      res.status(200).json({
-        success: false,
-        error: `Supabase respinge salvarea: ${dbError.message}. Verifica daca ai coloanele denumite exact asa în tabel.`
-      });
-      return;
-    }
-
-    // Dacă totul e ok, trimitem succesul normal
-    res.status(200).json({
-      success: true,
-      variantShown: variant,
-      variantA: originalText,
-      variantB: aiVariant
-    });
-
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    console.error('Server Error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
