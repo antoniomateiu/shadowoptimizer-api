@@ -1,18 +1,13 @@
-{const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
 
-// URL-ul tău curat din Supabase
 const supabaseUrl = "AICI_PUI_URL_UL_TAU_DE_SUPABASE"; 
-
-// Aici pui textul generat de pe site-ul Base64 (Bifează varianta codificată)
 const cheieInBase64 = "AICI_PUI_TEXTUL_GENERAT_DE_PE_SITE_BASE64";
 
-// Serverul o decodifică automat la rulare, perfect securizat pentru GitHub!
 const supabaseKey = Buffer.from(cheieInBase64, 'base64').toString('utf-8');
 const openaiKey = "mock_key";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
