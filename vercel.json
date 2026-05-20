@@ -1,15 +1,25 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/optimize.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/track-event.js": {
+      "memory": 1024,
+      "maxDuration": 30
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.js"
+      "src": "/api/optimize",
+      "dest": "/api/optimize.js",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/track-event",
+      "dest": "/api/track-event.js",
+      "methods": ["POST", "OPTIONS"]
     }
   ]
 }
