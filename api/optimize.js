@@ -63,6 +63,9 @@ module.exports = async function handler(req, res) {
         console.warn('OpenAI error fallback:', aiError.message);
       }
     }
+// Ne asigurăm că variabila variant este definită clar (Alege aleatoriu între A și B)
+    const variant = Math.random() < 0.5 ? 'A' : 'B';
+    const aiVariant = "Varianta AI Implicită: Descoperă confortul suprem cu noul nostru produs premium! Stil modern și materiale de calitate superioară.";
 
     // Trimitem datele în tabelul rezultate_ab
     const { error: dbError } = await supabase.from('rezultate_ab').insert({
@@ -73,6 +76,23 @@ module.exports = async function handler(req, res) {
       afisari_b: variant === 'B' ? 1 : 0,
       conversii_a: 0,
       conversii_b: 0
+    });
+
+    // Dacă există o eroare de structură în Supabase, o prindem aici
+    if (dbError) {
+      console.error('Supabase Error:', dbError.message);
+      return res.status(200).json({
+        success: false,
+        error: `Supabase respinge salvarea: ${dbError.message}`
+      });
+    }
+
+    // Dacă totul e ok, trimitem succesul normal
+    return res.status(200).json({
+      success: true,
+      variantShown: variant,
+      variantA: originalText,
+      variantB: aiVariant
     });
 
     // DACĂ EXISTĂ EROARE LA BAZA DE DATE, O TRIMITEM PE ECRAN
