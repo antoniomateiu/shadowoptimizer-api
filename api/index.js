@@ -1,6 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
-const cors = require('cors');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
@@ -9,19 +8,24 @@ const openaiKey = process.env.OPENAI_API_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const openai = new OpenAI({ apiKey: openaiKey });
 
-const corsHandler = cors({ 
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-});
-
 module.exports = (req, res) => {
-  corsHandler(req, res, async () => {
-    try {
-      if (req.method === 'POST' && req.url === '/api/optimize') {
-        const { clientId, productId, originalText } = req.body;
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-        // Genereaza varianta AI
+  // Preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  try {
+    if (req.method === 'POST' && req.url === '/api/optimize') {
+      const { clientId, productId, originalText } = req.body;
+
+      // Genereaza varianta AI
+      (async () => {
         const completion = await openai.chat.completions.create({
           model: 'gpt-3.5-turbo',
           messages: [
@@ -38,11 +42,8 @@ module.exports = (req, res) => {
         });
 
         const aiVariant = completion.choices[0].message.content;
-
-        // Decide aleator: 50% A, 50% B
         const variant = Math.random() < 0.5 ? 'A' : 'B';
 
-        // Salveaza in DB
         await supabase.from('vizite').insert({
           client_id: clientId,
           product_id: productId,
@@ -56,9 +57,11 @@ module.exports = (req, res) => {
           variantA: originalText,
           variantB: aiVariant
         });
-      } else if (req.method === 'POST' && req.url === '/api/track-event') {
-        const { clientId, productId, eventType, variant } = req.body;
+      })();
+    } else if (req.method === 'POST' && req.url === '/api/track-event') {
+      const { clientId, productId, eventType, variant } = req.body;
 
+      (async () => {
         await supabase.from('vizite').insert({
           client_id: clientId,
           product_id: productId,
@@ -67,12 +70,12 @@ module.exports = (req, res) => {
         });
 
         res.status(200).json({ success: true });
-      } else {
-        res.status(404).json({ error: 'Endpoint not found' });
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error.message });
+      })();
+    } else {
+      res.status(404).json({ error: 'Endpoint not found' });
     }
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
 };
